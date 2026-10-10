@@ -1,416 +1,1144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STRATUS Chatroom</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Stratus Chatroom</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f0f1e 0%, #1a0033 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
+    * { box-sizing: border-box; }
 
-        .chatroom-container {
-            width: 100%;
-            max-width: 800px;
-            height: 90vh;
-            background: rgba(20, 20, 40, 0.9);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 20px 60px rgba(0, 212, 255, 0.2);
-            backdrop-filter: blur(10px);
-        }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: #020202;
+      color: white;
+      overflow: hidden;
+    }
 
-        .header {
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    body {
+      background: radial-gradient(circle at top, #111827, #020202 30%, #010101 100%);
+    }
 
-        .header h1 {
-            font-size: 1.5rem;
-            background: linear-gradient(135deg, #00d4ff, #0099ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+    .chat-bg {
+      background-image: radial-gradient(#1f2937 1px, transparent 1px);
+      background-size: 18px 18px;
+      background-color: rgba(2, 2, 2, 0.9);
+    }
 
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
+    .shadow-soft { box-shadow: 0 24px 64px rgba(0,0,0,0.45); }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #00ff88;
-            animation: pulse 2s infinite;
-        }
+    .toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 100;
+      background: rgba(17, 24, 39, 0.96);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: white;
+      padding: 0.8rem 1rem;
+      border-radius: 14px;
+      box-shadow: 0 20px 30px rgba(0,0,0,0.3);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.2s ease;
+      pointer-events: none;
+    }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-        .messages-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
+    .call-panel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.82);
+      z-index: 60;
+    }
 
-        .message {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-            animation: slideIn 0.3s ease;
-        }
+    .call-panel.show { display: flex; }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    .ring {
+      animation: ring 1.6s infinite ease-in-out;
+    }
 
-        .message-header {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            font-size: 0.85rem;
-        }
-
-        .message-username {
-            font-weight: 700;
-            font-size: 0.95rem;
-        }
-
-        .message-time {
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 0.75rem;
-        }
-
-        .message-content {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 0.8rem 1rem;
-            border-radius: 8px;
-            border-left: 3px solid;
-            word-wrap: break-word;
-            line-height: 1.4;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.5);
-            padding: 2rem;
-        }
-
-        .input-section {
-            padding: 1.5rem;
-            border-top: 1px solid rgba(0, 212, 255, 0.2);
-            display: flex;
-            gap: 0.8rem;
-        }
-
-        .username-input,
-        .message-input {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: #fff;
-            padding: 0.8rem 1rem;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .username-input {
-            width: 120px;
-        }
-
-        .message-input {
-            flex: 1;
-        }
-
-        .username-input:focus,
-        .message-input:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(0, 212, 255, 0.5);
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
-        }
-
-        .message-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .send-btn {
-            background: linear-gradient(135deg, #00d4ff, #0099ff);
-            color: #000;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.4);
-        }
-
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
-        .color-picker {
-            display: flex;
-            gap: 0.3rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .color-option {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .color-option:hover,
-        .color-option.active {
-            border-color: #fff;
-            transform: scale(1.1);
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(0, 212, 255, 0.3);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 212, 255, 0.5);
-        }
-    </style>
+    @keyframes ring {
+      0% { transform: scale(1); box-shadow: 0 0 0 rgba(59,130,246,0.5); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 18px rgba(59,130,246,0.0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59,130,246,0.0); }
+    }
+  </style>
 </head>
-<body>
-    <div class="chatroom-container">
-        <div class="header">
-            <h1>🎮 STRATUS Chatroom</h1>
-            <div class="status">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="userCount">Loading...</span>
+<body class="bg-black text-white">
+  <div id="app" class="relative w-screen h-screen flex flex-col md:flex-row overflow-hidden bg-black">
+    <aside id="sidebar" class="w-full md:w-[360px] lg:w-[420px] bg-zinc-950 border-r border-zinc-800 flex flex-col h-full z-20">
+      <div class="bg-zinc-900 border-b border-zinc-800 px-4 py-3.5 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <div id="my-avatar" class="w-10 h-10 rounded-full bg-blue-500 text-white text-sm font-bold flex items-center justify-center shadow-lg">U</div>
+            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-900 rounded-full"></span>
+          </div>
+          <div>
+            <div id="my-display-name" class="font-semibold text-sm tracking-wide">Guest</div>
+            <div class="text-[11px] text-zinc-400">Online • live</div>
+          </div>
+        </div>
+        <button id="friend-badge-btn" class="relative w-9 h-9 rounded-full hover:bg-zinc-800 flex items-center justify-center transition text-zinc-300" title="Friend requests">
+          <i class="fa-solid fa-users"></i>
+          <span id="friend-request-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
+        </button>
+      </div>
+
+      <div class="flex border-b border-zinc-800 bg-zinc-900/60 shrink-0">
+        <button data-tab="global" class="tab-btn flex-1 px-3 py-2.5 text-xs font-medium text-white border-b-2 border-white">Global</button>
+        <button data-tab="friends" class="tab-btn flex-1 px-3 py-2.5 text-xs font-medium text-zinc-400 border-b-2 border-transparent">Friends</button>
+        <button data-tab="messages" class="tab-btn flex-1 px-3 py-2.5 text-xs font-medium text-zinc-400 border-b-2 border-transparent">Messages</button>
+      </div>
+
+      <div class="p-3 border-b border-zinc-900 bg-zinc-950 shrink-0">
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500 pointer-events-none"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+          <input id="search-input" type="text" placeholder="Search people..." class="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition" />
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto">
+        <div id="global-panel" class="panel">
+          <div class="flex items-center px-4 py-3.5 cursor-pointer hover:bg-zinc-900 transition border-l-2 border-white bg-zinc-900" data-global-room="true">
+            <div class="relative mr-3 shrink-0">
+              <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white"><i class="fa-solid fa-globe"></i></div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-zinc-950 rounded-full"></span>
             </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex justify-between items-center mb-1">
+                <h3 class="font-semibold text-xs text-white truncate">Global Room</h3>
+                <span class="text-[10px] text-zinc-500">live</span>
+              </div>
+              <p id="global-last-msg" class="text-[11px] text-zinc-400 truncate">Welcome to the live room</p>
+            </div>
+          </div>
         </div>
 
-        <div class="messages-container" id="messagesContainer">
-            <div class="empty-state">💬 No messages yet. Start the conversation!</div>
+        <div id="friends-panel" class="panel hidden">
+          <div id="friend-requests-wrapper" class="hidden">
+            <div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400 bg-zinc-900/80">Friend requests</div>
+            <div id="friend-requests-list" class="divide-y divide-zinc-900/50"></div>
+          </div>
+          <div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400 bg-zinc-900/80">Your friends</div>
+          <div id="friend-list" class="divide-y divide-zinc-900/50"></div>
         </div>
 
-        <div class="input-section">
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <div class="color-picker" id="colorPicker"></div>
-                <input type="text" id="usernameInput" class="username-input" placeholder="Your name" maxlength="20">
-            </div>
-            <input type="text" id="messageInput" class="message-input" placeholder="Type a message..." maxlength="500">
-            <button class="send-btn" id="sendBtn">Send</button>
+        <div id="messages-panel" class="panel hidden">
+          <div id="message-thread-list" class="divide-y divide-zinc-900/50"></div>
         </div>
+
+        <div id="search-panel" class="panel hidden">
+          <div id="search-results" class="divide-y divide-zinc-900/50"></div>
+        </div>
+      </div>
+
+      <div class="bg-zinc-900/70 border-t border-zinc-900 px-4 py-2.5 text-center text-[11px] text-zinc-500 shrink-0">Stratus Chatroom • Friend-first messaging</div>
+    </aside>
+
+    <main class="relative flex-1 flex flex-col h-full bg-zinc-950 overflow-hidden">
+      <header class="bg-zinc-900 border-b border-zinc-800 px-4 py-3 flex items-center justify-between z-10 shrink-0">
+        <div class="flex items-center gap-3">
+          <button id="mobile-back" class="md:hidden text-zinc-300 hover:text-white text-lg"><i class="fa-solid fa-arrow-left"></i></button>
+          <div class="relative">
+            <div id="chat-avatar" class="w-10 h-10 rounded-full bg-blue-500 text-white text-sm font-bold flex items-center justify-center shadow-inner">G</div>
+            <span id="chat-indicator" class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-zinc-900 rounded-full"></span>
+          </div>
+          <div>
+            <h1 id="chat-title" class="font-semibold text-sm text-white">Global Room</h1>
+            <p id="chat-subtitle" class="text-xs text-zinc-400">Public live chat</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="call-btn" class="hidden w-9 h-9 rounded-full hover:bg-zinc-800 flex items-center justify-center text-zinc-300 transition" title="Voice call">
+            <i class="fa-solid fa-phone"></i>
+          </button>
+          <button id="clear-chat-btn" class="w-9 h-9 rounded-full hover:bg-zinc-800 flex items-center justify-center text-zinc-300 transition" title="Clear current chat">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </header>
+
+      <div id="message-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 chat-bg relative"></div>
+
+      <div id="typing-indicator" class="hidden px-4 py-1.5 bg-[#030303] text-zinc-400 text-xs flex items-center space-x-2 shrink-0">
+        <span class="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"></span>
+        <span class="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+        <span class="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+        <span id="typing-user-text" class="italic text-[11px] text-zinc-400 pl-1">Someone is typing...</span>
+      </div>
+
+      <footer class="bg-zinc-900 border-t border-zinc-800 p-3 flex items-center gap-2 relative z-10 shrink-0">
+        <button id="emoji-btn" class="w-10 h-10 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 flex items-center justify-center transition text-lg" title="Emojis">
+          <i class="fa-regular fa-face-smile"></i>
+        </button>
+
+        <div id="emoji-picker" class="hidden absolute bottom-16 left-3 bg-zinc-900 border border-zinc-800 p-3 rounded-2xl shadow-2xl z-50 grid grid-cols-6 gap-2 text-xl">
+          <button data-emoji="😊" class="hover:bg-zinc-800 p-1.5 rounded-lg">😊</button>
+          <button data-emoji="😂" class="hover:bg-zinc-800 p-1.5 rounded-lg">😂</button>
+          <button data-emoji="👍" class="hover:bg-zinc-800 p-1.5 rounded-lg">👍</button>
+          <button data-emoji="🔥" class="hover:bg-zinc-800 p-1.5 rounded-lg">🔥</button>
+          <button data-emoji="💡" class="hover:bg-zinc-800 p-1.5 rounded-lg">💡</button>
+          <button data-emoji="❤️" class="hover:bg-zinc-800 p-1.5 rounded-lg">❤️</button>
+          <button data-emoji="✨" class="hover:bg-zinc-800 p-1.5 rounded-lg">✨</button>
+          <button data-emoji="🚀" class="hover:bg-zinc-800 p-1.5 rounded-lg">🚀</button>
+          <button data-emoji="🎉" class="hover:bg-zinc-800 p-1.5 rounded-lg">🎉</button>
+          <button data-emoji="🙌" class="hover:bg-zinc-800 p-1.5 rounded-lg">🙌</button>
+          <button data-emoji="☕" class="hover:bg-zinc-800 p-1.5 rounded-lg">☕</button>
+          <button data-emoji="💻" class="hover:bg-zinc-800 p-1.5 rounded-lg">💻</button>
+        </div>
+
+        <div class="flex-1 relative">
+          <input id="message-input" type="text" maxlength="500" placeholder="Type a message..." class="w-full bg-black border border-zinc-800 focus:border-zinc-500 rounded-full px-4 py-2.5 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none transition" />
+        </div>
+        <button id="send-btn" class="w-10 h-10 rounded-full bg-white text-black font-semibold flex items-center justify-center hover:bg-zinc-200 transition shadow-md shrink-0">
+          <i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
+      </footer>
+    </main>
+
+    <div id="call-panel" class="call-panel">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full text-center shadow-soft relative">
+        <div id="call-panel-content"></div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        const API_URL = window.location.origin;
-        const colors = ['#00d4ff', '#00ff88', '#ff00ff', '#ffaa00', '#ff0055', '#00ffff'];
-        let selectedColor = colors[0];
-        let lastMessageTimestamp = 0;
-        let isConnected = false;
+  <div id="username-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+      <div class="w-16 h-16 rounded-full bg-white text-black text-2xl font-bold flex items-center justify-center mx-auto mb-4 shadow-lg">
+        <i class="fa-solid fa-comments"></i>
+      </div>
+      <h2 class="text-lg font-bold text-white mb-1">Stratus Chatroom</h2>
+      <p class="text-xs text-zinc-400 mb-6">Choose a display name and start chatting.</p>
+      <input id="username-input" type="text" maxlength="20" placeholder="Your display name..." class="w-full bg-black border border-zinc-800 focus:border-zinc-500 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none mb-4 text-center" />
+      <button id="continue-btn" class="w-full bg-white text-black font-semibold py-3 rounded-xl text-sm hover:bg-zinc-200 transition shadow-md">Start chatting</button>
+    </div>
+  </div>
 
-        // Initialize color picker
-        function initColorPicker() {
-            const picker = document.getElementById('colorPicker');
-            colors.forEach(color => {
-                const btn = document.createElement('div');
-                btn.className = 'color-option';
-                btn.style.backgroundColor = color;
-                if (color === selectedColor) btn.classList.add('active');
-                btn.onclick = () => {
-                    document.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    selectedColor = color;
-                };
-                picker.appendChild(btn);
-            });
-        }
+  <div id="toast" class="toast"></div>
 
-        // Get username
-        function getUsername() {
-            return document.getElementById('usernameInput').value.trim() || 'Anonymous';
-        }
+  <script>
+    const STORAGE_KEY = 'stratus-chatroom-state-v1';
+    const SIGNAL_CHANNEL = 'stratus-signal-channel';
+    const USER_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#14b8a6'];
 
-        // Format time
-        function formatTime(timestamp) {
-            return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        }
+    const appState = loadState();
+    const signalChannel = new BroadcastChannel(SIGNAL_CHANNEL);
+    const peerConnections = {};
+    const callState = {
+      localStream: null,
+      remoteStream: null,
+      activePeerId: null,
+      incoming: null,
+      outgoing: null,
+      timer: null,
+      callStart: 0,
+      muted: false,
+    };
 
-        // Render messages
-        function renderMessages(messages) {
-            const container = document.getElementById('messagesContainer');
-            
-            if (messages.length === 0 && lastMessageTimestamp === 0) {
-                container.innerHTML = '<div class="empty-state">💬 No messages yet. Start the conversation!</div>';
-                return;
-            }
+    const state = {
+      activeTab: 'global',
+      activeChatId: 'global',
+      activeChatType: 'global',
+      myUserId: appState.myUserId || generateId('user'),
+      myName: appState.myName || '',
+      users: appState.users || {},
+      globalMessages: appState.globalMessages || [],
+      directMessages: appState.directMessages || {},
+    };
 
-            if (messages.length === 0) return;
-
-            messages.forEach(msg => {
-                if (msg.timestamp > lastMessageTimestamp) {
-                    const msgEl = document.createElement('div');
-                    msgEl.className = 'message';
-                    msgEl.innerHTML = `
-                        <div class="message-header">
-                            <span class="message-username" style="color: ${msg.color}">${msg.username}</span>
-                            <span class="message-time">${formatTime(msg.timestamp)}</span>
-                        </div>
-                        <div class="message-content" style="border-left-color: ${msg.color}">${escapeHtml(msg.message)}</div>
-                    `;
-                    container.appendChild(msgEl);
-                    lastMessageTimestamp = msg.timestamp;
-                }
-            });
-
-            // Auto-scroll to bottom
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Poll for messages
-        async function pollMessages() {
-            try {
-                const res = await fetch(`${API_URL}/api/chat?action=messages&since=${lastMessageTimestamp}`);
-                const data = await res.json();
-                
-                if (data.messages && data.messages.length > 0) {
-                    renderMessages(data.messages);
-                }
-                
-                isConnected = true;
-                updateStatus(true);
-            } catch (error) {
-                console.error('Poll error:', error);
-                isConnected = false;
-                updateStatus(false);
-            }
-        }
-
-        // Update status
-        function updateStatus(connected) {
-            const dot = document.getElementById('statusDot');
-            if (connected) {
-                dot.style.background = '#00ff88';
-                dot.style.animation = 'pulse 2s infinite';
-            } else {
-                dot.style.background = '#ff0055';
-                dot.style.animation = 'none';
-            }
-        }
-
-        // Get user count
-        async function updateUserCount() {
-            try {
-                const res = await fetch(`${API_URL}/api/chat?action=status`);
-                const data = await res.json();
-                document.getElementById('userCount').textContent = `${data.users || 0} users online`;
-            } catch (error) {
-                document.getElementById('userCount').textContent = 'offline';
-            }
-        }
-
-        // Send message
-        async function sendMessage() {
-            const username = getUsername();
-            const message = document.getElementById('messageInput').value.trim();
-
-            if (!message) return;
-
-            document.getElementById('sendBtn').disabled = true;
-            document.getElementById('messageInput').value = '';
-
-            try {
-                const res = await fetch(`${API_URL}/api/chat?action=send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, message, color: selectedColor })
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    renderMessages([data.message]);
-                }
-            } catch (error) {
-                console.error('Send error:', error);
-            } finally {
-                document.getElementById('sendBtn').disabled = false;
-                document.getElementById('messageInput').focus();
-            }
-        }
-
-        // Event listeners
-        document.getElementById('sendBtn').onclick = sendMessage;
-        document.getElementById('messageInput').onkeypress = (e) => {
-            if (e.key === 'Enter') sendMessage();
+    const currentUser = () => state.users[state.myUserId] || null;
+    const ensureCurrentUser = () => {
+      if (!state.users[state.myUserId]) {
+        state.users[state.myUserId] = {
+          id: state.myUserId,
+          name: state.myName || 'Guest',
+          color: USER_COLORS[0],
+          online: true,
+          friends: [],
+          incomingRequests: [],
+          outgoingRequests: [],
+          notifications: [],
         };
+      }
+    };
 
-        // Initialize
-        initColorPicker();
-        pollMessages();
-        updateUserCount();
-        setInterval(pollMessages, 2000); // Poll every 2 seconds
-        setInterval(updateUserCount, 5000); // Update user count every 5 seconds
-    </script>
+    (function setup() {
+      if (!state.myName) {
+        showUsernameModal();
+      } else {
+        hideUsernameModal();
+      }
+
+      bindUI();
+      ensureCurrentUser();
+      saveState();
+      syncMyUser();
+      renderAll();
+      openGlobalChat();
+      setupSignalHandler();
+      setupStorageSync();
+      setInterval(() => {
+        const user = currentUser();
+        if (user) {
+          user.online = true;
+          saveState();
+          renderAll();
+        }
+      }, 15000);
+    })();
+
+    function bindUI() {
+      document.getElementById('continue-btn').addEventListener('click', () => {
+        const nameInput = document.getElementById('username-input');
+        const name = nameInput.value.trim();
+        if (!name) {
+          toast('Please enter a display name');
+          return;
+        }
+        state.myName = name;
+        state.users[state.myUserId] = state.users[state.myUserId] || { id: state.myUserId, name, color: USER_COLORS[0], friends: [], incomingRequests: [], outgoingRequests: [], notifications: [] };
+        state.users[state.myUserId].name = name;
+        hideUsernameModal();
+        saveState();
+        renderAll();
+        syncMyUser();
+      });
+
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        if (!q) {
+          setVisiblePanel('global');
+          return;
+        }
+        renderSearchResults(q);
+        renderSearchPanel();
+      });
+
+      document.getElementById('send-btn').addEventListener('click', sendCurrentMessage);
+      document.getElementById('message-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendCurrentMessage();
+      });
+
+      document.getElementById('clear-chat-btn').addEventListener('click', () => {
+        const key = chatRoomKey(state.activeChatType, state.activeChatId);
+        if (state.activeChatType === 'global') {
+          state.globalMessages = [];
+        } else {
+          delete state.directMessages[key];
+        }
+        saveState();
+        renderMessages();
+        toast('Chat cleared');
+      });
+
+      document.getElementById('mobile-back').addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('hidden');
+      });
+
+      document.getElementById('emoji-btn').addEventListener('click', () => {
+        document.getElementById('emoji-picker').classList.toggle('hidden');
+      });
+      document.querySelectorAll('[data-emoji]').forEach(button => {
+        button.addEventListener('click', () => {
+          const input = document.getElementById('message-input');
+          input.value += button.dataset.emoji;
+          input.focus();
+          document.getElementById('emoji-picker').classList.add('hidden');
+        });
+      });
+
+      document.addEventListener('click', (event) => {
+        const picker = document.getElementById('emoji-picker');
+        if (!event.target.closest('#emoji-btn') && !event.target.closest('#emoji-picker')) {
+          picker.classList.add('hidden');
+        }
+      });
+
+      document.querySelectorAll('.tab-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const tab = button.dataset.tab;
+          selectTab(tab);
+        });
+      });
+
+      document.getElementById('friend-badge-btn').addEventListener('click', () => {
+        selectTab('friends');
+      });
+
+      document.querySelector('[data-global-room="true"]').addEventListener('click', openGlobalChat);
+
+      document.getElementById('call-btn').addEventListener('click', () => {
+        if (state.activeChatType !== 'direct') return;
+        startVoiceCall(state.activeChatId);
+      });
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { myUserId: '', myName: '', users: {}, globalMessages: [], directMessages: {} };
+        return JSON.parse(raw);
+      } catch (error) {
+        return { myUserId: '', myName: '', users: {}, globalMessages: [], directMessages: {} };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        myUserId: state.myUserId,
+        myName: state.myName,
+        users: state.users,
+        globalMessages: state.globalMessages,
+        directMessages: state.directMessages,
+      }));
+      signalChannel.postMessage({ type: 'state-sync', payload: { myUserId: state.myUserId, myName: state.myName, users: state.users, globalMessages: state.globalMessages, directMessages: state.directMessages } });
+    }
+
+    function setupStorageSync() {
+      window.addEventListener('storage', (event) => {
+        if (event.key === STORAGE_KEY && event.newValue) {
+          const data = JSON.parse(event.newValue);
+          state.users = data.users || {};
+          state.globalMessages = data.globalMessages || [];
+          state.directMessages = data.directMessages || {};
+          state.myName = data.myName || state.myName;
+          state.myUserId = data.myUserId || state.myUserId;
+          renderAll();
+        }
+      });
+    }
+
+    function syncMyUser() {
+      ensureCurrentUser();
+      const user = currentUser();
+      if (!user) return;
+      user.name = state.myName;
+      user.online = true;
+      document.getElementById('my-display-name').textContent = user.name;
+      document.getElementById('my-avatar').textContent = (user.name || 'U').charAt(0).toUpperCase();
+      document.getElementById('my-avatar').style.backgroundColor = user.color || USER_COLORS[0];
+      saveState();
+    }
+
+    function showUsernameModal() {
+      document.getElementById('username-modal').classList.remove('hidden');
+    }
+
+    function hideUsernameModal() {
+      document.getElementById('username-modal').classList.add('hidden');
+    }
+
+    function selectTab(tab) {
+      state.activeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach((button) => {
+        const active = button.dataset.tab === tab;
+        button.classList.toggle('border-white', active);
+        button.classList.toggle('text-white', active);
+        button.classList.toggle('border-transparent', !active);
+        button.classList.toggle('text-zinc-400', !active);
+      });
+
+      const panels = ['global-panel', 'friends-panel', 'messages-panel', 'search-panel'];
+      panels.forEach((id) => {
+        const panel = document.getElementById(id);
+        if (panel) panel.classList.add('hidden');
+      });
+
+      if (tab === 'global') {
+        document.getElementById('global-panel').classList.remove('hidden');
+      }
+      if (tab === 'friends') {
+        document.getElementById('friends-panel').classList.remove('hidden');
+      }
+      if (tab === 'messages') {
+        document.getElementById('messages-panel').classList.remove('hidden');
+      }
+      if (tab === 'search') {
+        document.getElementById('search-panel').classList.remove('hidden');
+      }
+
+      renderAll();
+    }
+
+    function openGlobalChat() {
+      state.activeChatType = 'global';
+      state.activeChatId = 'global';
+      document.getElementById('chat-title').textContent = 'Global Room';
+      document.getElementById('chat-subtitle').textContent = 'Public live chat';
+      document.getElementById('chat-avatar').textContent = 'G';
+      document.getElementById('chat-avatar').style.backgroundColor = '#2563eb';
+      document.getElementById('call-btn').classList.add('hidden');
+      renderMessages();
+      selectTab('global');
+    }
+
+    function openDirectChat(friendId) {
+      state.activeChatType = 'direct';
+      state.activeChatId = friendId;
+      const friend = state.users[friendId];
+      if (!friend) return;
+      document.getElementById('chat-title').textContent = friend.name;
+      document.getElementById('chat-subtitle').textContent = 'Direct message';
+      document.getElementById('chat-avatar').textContent = friend.name.charAt(0).toUpperCase();
+      document.getElementById('chat-avatar').style.backgroundColor = friend.color || '#3b82f6';
+      document.getElementById('call-btn').classList.remove('hidden');
+      renderMessages();
+      selectTab('messages');
+    }
+
+    function renderAll() {
+      syncMyUser();
+      renderGlobalLastMessage();
+      renderFriendRequests();
+      renderFriends();
+      renderThreads();
+      renderMessages();
+      renderSearchResults(document.getElementById('search-input').value.trim().toLowerCase());
+      updateFriendBadge();
+    }
+
+    function renderGlobalLastMessage() {
+      const last = state.globalMessages[state.globalMessages.length - 1];
+      const label = document.getElementById('global-last-msg');
+      if (!last) {
+        label.textContent = 'Welcome to the live room';
+        return;
+      }
+      label.textContent = `${last.senderName}: ${last.text}`;
+    }
+
+    function updateFriendBadge() {
+      const myInfo = currentUser();
+      const total = (myInfo?.incomingRequests || []).length;
+      const badge = document.getElementById('friend-request-badge');
+      if (total > 0) {
+        badge.textContent = String(total);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function renderFriendRequests() {
+      const wrapper = document.getElementById('friend-requests-wrapper');
+      const list = document.getElementById('friend-requests-list');
+      const myInfo = currentUser();
+      const requests = myInfo?.incomingRequests || [];
+      if (!requests.length) {
+        wrapper.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+      }
+      wrapper.classList.remove('hidden');
+
+      const html = requests.map((requestId) => {
+        const person = state.users[requestId];
+        if (!person) return '';
+        return `
+          <div class="flex items-center px-4 py-3 gap-3 hover:bg-zinc-800 transition">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0" style="background:${person.color || '#3b82f6'}">${person.name.charAt(0).toUpperCase()}</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-medium text-xs text-white truncate">${escapeHtml(person.name)}</div>
+              <div class="text-[10px] text-zinc-400">sent you a friend request</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button data-accept-request="${person.id}" class="px-2 py-1 rounded-lg bg-green-600 text-[10px] font-semibold hover:bg-green-500 transition">Accept</button>
+              <button data-decline-request="${person.id}" class="px-2 py-1 rounded-lg bg-red-600 text-[10px] font-semibold hover:bg-red-500 transition">Decline</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      list.innerHTML = html;
+
+      list.querySelectorAll('[data-accept-request]').forEach((button) => {
+        button.addEventListener('click', () => acceptFriendRequest(button.dataset.acceptRequest));
+      });
+      list.querySelectorAll('[data-decline-request]').forEach((button) => {
+        button.addEventListener('click', () => declineFriendRequest(button.dataset.declineRequest));
+      });
+    }
+
+    function renderFriends() {
+      const list = document.getElementById('friend-list');
+      const myInfo = currentUser();
+      const friends = (myInfo?.friends || []).map(friendId => state.users[friendId]).filter(Boolean);
+
+      if (!friends.length) {
+        list.innerHTML = '<div class="px-4 py-3 text-xs text-zinc-400">No friends yet. Search for someone and send a request.</div>';
+        return;
+      }
+
+      list.innerHTML = friends.map((friend) => `
+        <div class="flex items-center px-4 py-3 gap-3 hover:bg-zinc-800 transition">
+          <div class="relative shrink-0">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white" style="background:${friend.color || '#3b82f6'}">${friend.name.charAt(0).toUpperCase()}</div>
+            <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full border border-zinc-900 bg-green-500"></span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="font-medium text-xs text-white truncate">${escapeHtml(friend.name)}</div>
+            <div class="text-[10px] text-zinc-400">Online now</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button data-open-direct="${friend.id}" class="px-2 py-1 rounded-lg bg-blue-600 text-[10px] font-semibold hover:bg-blue-500 transition">Message</button>
+            <button data-call-friend="${friend.id}" class="px-2 py-1 rounded-lg bg-emerald-600 text-[10px] font-semibold hover:bg-emerald-500 transition">Call</button>
+          </div>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('[data-open-direct]').forEach((button) => {
+        button.addEventListener('click', () => openDirectChat(button.dataset.openDirect));
+      });
+      list.querySelectorAll('[data-call-friend]').forEach((button) => {
+        button.addEventListener('click', () => startVoiceCall(button.dataset.callFriend));
+      });
+    }
+
+    function renderThreads() {
+      const list = document.getElementById('message-thread-list');
+      const myInfo = currentUser();
+      const friends = (myInfo?.friends || []).map(friendId => state.users[friendId]).filter(Boolean);
+      if (!friends.length) {
+        list.innerHTML = '<div class="px-4 py-3 text-xs text-zinc-400">No active conversations yet.</div>';
+        return;
+      }
+
+      list.innerHTML = friends.map((friend) => {
+        const roomKey = chatRoomKey('direct', friend.id);
+        const messages = state.directMessages[roomKey] || [];
+        const last = messages[messages.length - 1];
+        return `
+          <div data-direct-thread="${friend.id}" class="flex items-center px-4 py-3 gap-3 hover:bg-zinc-800 transition cursor-pointer">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0" style="background:${friend.color || '#3b82f6'}">${friend.name.charAt(0).toUpperCase()}</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-medium text-xs text-white truncate">${escapeHtml(friend.name)}</div>
+              <div class="text-[10px] text-zinc-400 truncate">${last ? escapeHtml(last.text) : 'Start chatting'}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      list.querySelectorAll('[data-direct-thread]').forEach((element) => {
+        element.addEventListener('click', () => openDirectChat(element.dataset.directThread));
+      });
+    }
+
+    function renderSearchResults(query) {
+      const panel = document.getElementById('search-results');
+      if (!query) {
+        panel.innerHTML = '';
+        return;
+      }
+
+      const users = Object.values(state.users).filter((user) => {
+        if (user.id === state.myUserId) return false;
+        return user.name.toLowerCase().includes(query);
+      });
+
+      if (!users.length) {
+        panel.innerHTML = '<div class="px-4 py-3 text-xs text-zinc-400">No people found.</div>';
+        return;
+      }
+
+      const myInfo = currentUser();
+      panel.innerHTML = users.map((user) => {
+        const isFriend = (myInfo?.friends || []).includes(user.id);
+        const hasRequest = (myInfo?.outgoingRequests || []).includes(user.id) || (myInfo?.incomingRequests || []).includes(user.id);
+        const actionButton = isFriend
+          ? `<button data-open-direct="${user.id}" class="px-2 py-1 rounded-lg bg-blue-600 text-[10px] font-semibold hover:bg-blue-500 transition">Message</button>`
+          : hasRequest
+            ? `<button class="px-2 py-1 rounded-lg bg-zinc-700 text-[10px] font-semibold cursor-default">Pending</button>`
+            : `<button data-add-friend="${user.id}" class="px-2 py-1 rounded-lg bg-emerald-600 text-[10px] font-semibold hover:bg-emerald-500 transition">Add</button>`;
+
+        return `
+          <div class="flex items-center px-4 py-3 gap-3 hover:bg-zinc-800 transition">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0" style="background:${user.color || '#3b82f6'}">${user.name.charAt(0).toUpperCase()}</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-medium text-xs text-white truncate">${escapeHtml(user.name)}</div>
+              <div class="text-[10px] text-zinc-400">${user.online ? 'Online' : 'Away'}</div>
+            </div>
+            <div class="flex items-center gap-2">${actionButton}</div>
+          </div>
+        `;
+      }).join('');
+
+      panel.querySelectorAll('[data-add-friend]').forEach((button) => {
+        button.addEventListener('click', () => sendFriendRequest(button.dataset.addFriend));
+      });
+      panel.querySelectorAll('[data-open-direct]').forEach((button) => {
+        button.addEventListener('click', () => openDirectChat(button.dataset.openDirect));
+      });
+    }
+
+    function renderSearchPanel() {
+      document.getElementById('search-panel').classList.remove('hidden');
+      document.getElementById('global-panel').classList.add('hidden');
+      document.getElementById('friends-panel').classList.add('hidden');
+      document.getElementById('messages-panel').classList.add('hidden');
+    }
+
+    function sendFriendRequest(targetId) {
+      const me = currentUser();
+      if (!me || !targetId || targetId === state.myUserId) return;
+      const targetUser = state.users[targetId];
+      if (!targetUser) return;
+      if ((me.friends || []).includes(targetId)) {
+        openDirectChat(targetId);
+        return;
+      }
+      if (!(me.outgoingRequests || []).includes(targetId)) {
+        me.outgoingRequests = me.outgoingRequests || [];
+        me.outgoingRequests.push(targetId);
+      }
+      targetUser.incomingRequests = targetUser.incomingRequests || [];
+      if (!targetUser.incomingRequests.includes(state.myUserId)) {
+        targetUser.incomingRequests.push(state.myUserId);
+      }
+      targetUser.notifications = targetUser.notifications || [];
+      targetUser.notifications.unshift({
+        id: generateId('notice'),
+        message: `${me.name} sent you a friend request`,
+        type: 'friend-request',
+        createdAt: Date.now(),
+      });
+      saveState();
+      renderAll();
+      toast(`Friend request sent to ${targetUser.name}`);
+      signalChannel.postMessage({ type: 'friend-request', from: state.myUserId, to: targetId, payload: { name: me.name } });
+    }
+
+    function acceptFriendRequest(fromUserId) {
+      const me = currentUser();
+      if (!me) return;
+      const fromUser = state.users[fromUserId];
+      if (!fromUser) return;
+      me.friends = Array.from(new Set([...(me.friends || []), fromUserId]));
+      fromUser.friends = Array.from(new Set([...(fromUser.friends || []), state.myUserId]));
+      me.incomingRequests = (me.incomingRequests || []).filter((id) => id !== fromUserId);
+      fromUser.outgoingRequests = (fromUser.outgoingRequests || []).filter((id) => id !== state.myUserId);
+      me.notifications = me.notifications || [];
+      me.notifications.unshift({ id: generateId('notice'), message: `You are now friends with ${fromUser.name}`, type: 'info', createdAt: Date.now() });
+      fromUser.notifications = fromUser.notifications || [];
+      fromUser.notifications.unshift({ id: generateId('notice'), message: `${me.name} accepted your friend request`, type: 'friend-accepted', createdAt: Date.now() });
+      saveState();
+      renderAll();
+      signalChannel.postMessage({ type: 'friend-accepted', from: state.myUserId, to: fromUserId, payload: { name: me.name } });
+      toast(`You and ${fromUser.name} are now friends`);
+      openDirectChat(fromUserId);
+    }
+
+    function declineFriendRequest(fromUserId) {
+      const me = currentUser();
+      if (!me) return;
+      me.incomingRequests = (me.incomingRequests || []).filter((id) => id !== fromUserId);
+      const fromUser = state.users[fromUserId];
+      if (fromUser) {
+        fromUser.outgoingRequests = (fromUser.outgoingRequests || []).filter((id) => id !== state.myUserId);
+      }
+      saveState();
+      renderAll();
+      toast('Friend request declined');
+    }
+
+    function sendCurrentMessage() {
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const msg = {
+        id: generateId('msg'),
+        senderId: state.myUserId,
+        senderName: state.myName,
+        senderColor: currentUser()?.color || '#3b82f6',
+        text,
+        timestamp: Date.now(),
+      };
+
+      if (state.activeChatType === 'global') {
+        state.globalMessages.push(msg);
+        saveState();
+        renderGlobalLastMessage();
+      } else {
+        const roomKey = chatRoomKey('direct', state.activeChatId);
+        state.directMessages[roomKey] = state.directMessages[roomKey] || [];
+        state.directMessages[roomKey].push(msg);
+        saveState();
+      }
+
+      renderMessages();
+      input.value = '';
+      signalChannel.postMessage({
+        type: state.activeChatType === 'global' ? 'global-message' : 'direct-message',
+        from: state.myUserId,
+        to: state.activeChatType === 'global' ? 'all' : state.activeChatId,
+        payload: msg,
+      });
+    }
+
+    function renderMessages() {
+      const container = document.getElementById('message-container');
+      const messages = state.activeChatType === 'global' ? state.globalMessages : (state.directMessages[chatRoomKey('direct', state.activeChatId)] || []);
+
+      if (!messages.length) {
+        container.innerHTML = `
+          <div class="flex justify-center my-2">
+            <div class="bg-zinc-900/90 border border-zinc-800/80 text-zinc-400 text-[10px] px-3.5 py-1.5 rounded-xl text-center max-w-sm shadow-sm">
+              <i class="fa-solid fa-lock mr-1.5 text-white"></i> ${state.activeChatType === 'global' ? 'Start the global conversation.' : 'No direct messages yet. Say hi.'}
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = `
+        <div class="flex justify-center my-2">
+          <div class="bg-zinc-900/90 border border-zinc-800/80 text-zinc-400 text-[10px] px-3.5 py-1.5 rounded-xl text-center max-w-sm shadow-sm">
+            <i class="fa-solid fa-lock mr-1.5 text-white"></i> Messages are encrypted and synced live.
+          </div>
+        </div>
+      `;
+
+      messages.forEach((msg) => {
+        const isMine = msg.senderId === state.myUserId;
+        html += `
+          <div class="flex ${isMine ? 'justify-end' : 'justify-start'} mb-2.5">
+            <div class="max-w-[85%] md:max-w-[65%] rounded-2xl px-4 py-2.5 text-xs md:text-sm shadow-md ${isMine ? 'bg-white text-black rounded-br-none' : 'bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-bl-none'}">
+              ${!isMine ? `<p class="text-[10px] font-semibold mb-0.5" style="color:${msg.senderColor || '#9ca3af'}">${escapeHtml(msg.senderName)}</p>` : ''}
+              <p class="break-words leading-relaxed">${escapeHtml(msg.text)}</p>
+              <div class="flex justify-end mt-1 text-[9px] ${isMine ? 'text-zinc-600' : 'text-zinc-400'}">
+                <span>${formatTime(msg.timestamp)}</span>
+                ${isMine ? '<span class="ml-1"><i class="fa-solid fa-check-double"></i></span>' : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function setupSignalHandler() {
+      signalChannel.onmessage = (event) => {
+        const { type, from, to, payload } = event.data || {};
+        if (!type) return;
+
+        if (type === 'state-sync') {
+          if (payload && payload.users) {
+            state.users = payload.users;
+            syncMyUser();
+          }
+          if (payload && payload.globalMessages) state.globalMessages = payload.globalMessages;
+          if (payload && payload.directMessages) state.directMessages = payload.directMessages;
+          renderAll();
+          return;
+        }
+
+        if (from === state.myUserId) return;
+
+        if (type === 'friend-request') {
+          if (!state.users[to]) state.users[to] = { id: to, name: 'Unknown', color: '#3b82f6', friends: [], incomingRequests: [], outgoingRequests: [], notifications: [] };
+          if (!state.users[from]) state.users[from] = { id: from, name: payload?.name || 'Someone', color: '#3b82f6', friends: [], incomingRequests: [], outgoingRequests: [], notifications: [] };
+          const target = currentUser();
+          if (target) {
+            target.incomingRequests = Array.from(new Set([...(target.incomingRequests || []), from]));
+            target.notifications = target.notifications || [];
+            target.notifications.unshift({ id: generateId('notice'), message: `${payload?.name || 'Someone'} sent you a friend request`, type: 'friend-request', createdAt: Date.now() });
+          }
+          saveState();
+          renderAll();
+          toast(`${payload?.name || 'Someone'} sent you a friend request`);
+          return;
+        }
+
+        if (type === 'friend-accepted') {
+          const me = currentUser();
+          if (me) {
+            me.notifications = me.notifications || [];
+            me.notifications.unshift({ id: generateId('notice'), message: `${payload?.name || 'Someone'} accepted your friend request`, type: 'info', createdAt: Date.now() });
+          }
+          renderAll();
+          toast(`${payload?.name || 'Someone'} accepted your request`);
+          return;
+        }
+
+        if (type === 'global-message') {
+          const existing = state.globalMessages.find((msg) => msg.id === payload.id);
+          if (!existing) {
+            state.globalMessages.push(payload);
+            renderGlobalLastMessage();
+            renderMessages();
+            saveState();
+          }
+          return;
+        }
+
+        if (type === 'direct-message') {
+          const roomKey = chatRoomKey('direct', from);
+          const arr = state.directMessages[roomKey] || [];
+          if (!arr.some((m) => m.id === payload.id)) {
+            state.directMessages[roomKey] = [...arr, payload];
+            saveState();
+            renderThreads();
+            if (state.activeChatType === 'direct' && state.activeChatId === from) {
+              renderMessages();
+            }
+          }
+          return;
+        }
+
+        if (type === 'call-offer' && to === state.myUserId) {
+          handleIncomingCallOffer(from, payload);
+          return;
+        }
+
+        if (type === 'call-answer' && from === callState.activePeerId) {
+          const pc = peerConnections[from];
+          if (pc) {
+            pc.setRemoteDescription(new RTCSessionDescription(payload));
+          }
+          return;
+        }
+
+        if (type === 'call-ice' && from === callState.activePeerId) {
+          const pc = peerConnections[from];
+          if (pc && payload) {
+            pc.addIceCandidate(new RTCIceCandidate(payload));
+          }
+        }
+      };
+    }
+
+    function startVoiceCall(friendId) {
+      if (!friendId) return;
+      const friend = state.users[friendId];
+      if (!friend) return;
+      openCallPanel('outgoing', friend);
+      establishPeerConnection(friendId, true);
+    }
+
+    function handleIncomingCallOffer(fromId, offer) {
+      const friend = state.users[fromId];
+      if (!friend) return;
+      callState.incoming = { fromId };
+      openCallPanel('incoming', friend, () => acceptIncomingCall(fromId), () => declineIncomingCall(fromId));
+      establishPeerConnection(fromId, false, offer);
+    }
+
+    async function establishPeerConnection(friendId, isOutgoing, offer = null) {
+      const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      peerConnections[friendId] = pc;
+      callState.activePeerId = friendId;
+
+      if (!callState.localStream) {
+        try {
+          callState.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        } catch (error) {
+          toast('Microphone access is required for voice calls.');
+          return;
+        }
+      }
+
+      callState.localStream.getTracks().forEach((track) => {
+        pc.addTrack(track, callState.localStream);
+      });
+
+      pc.ontrack = (event) => {
+        callState.remoteStream = event.streams[0];
+        const audio = new Audio();
+        audio.srcObject = event.streams[0];
+        audio.autoplay = true;
+        audio.play().catch(() => {});
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          signalChannel.postMessage({
+            type: 'call-ice',
+            from: state.myUserId,
+            to: friendId,
+            payload: event.candidate
+          });
+        }
+      };
+
+      if (isOutgoing) {
+        const createdOffer = await pc.createOffer();
+        await pc.setLocalDescription(createdOffer);
+        signalChannel.postMessage({ type: 'call-offer', from: state.myUserId, to: friendId, payload: createdOffer });
+      } else if (offer) {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        signalChannel.postMessage({ type: 'call-answer', from: state.myUserId, to: friendId, payload: answer });
+      }
+    }
+
+    async function acceptIncomingCall(friendId) {
+      const pc = peerConnections[friendId];
+      if (pc) {
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        signalChannel.postMessage({ type: 'call-answer', from: state.myUserId, to: friendId, payload: answer });
+      }
+      callState.incoming = null;
+      closeCallPanel();
+      toast('Call connected');
+      startCallTimer();
+    }
+
+    function declineIncomingCall(friendId) {
+      const pc = peerConnections[friendId];
+      if (pc) pc.close();
+      delete peerConnections[friendId];
+      callState.incoming = null;
+      closeCallPanel();
+      toast('Call declined');
+      stopLocalStream();
+    }
+
+    function openCallPanel(type, friend, acceptFn, declineFn) {
+      const panel = document.getElementById('call-panel');
+      const content = document.getElementById('call-panel-content');
+      panel.classList.add('show');
+
+      if (type === 'outgoing') {
+        content.innerHTML = `
+          <div class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-white ring" style="background:${friend.color || '#3b82f6'}">${friend.name.charAt(0).toUpperCase()}</div>
+          <h2 class="font-bold text-xl mb-2 text-white">Calling ${escapeHtml(friend.name)}</h2>
+          <p class="text-sm text-zinc-400 mb-6">Wait for them to answer.</p>
+          <div class="flex justify-center">
+            <button data-end-call="true" class="bg-red-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-red-500 transition">End call</button>
+          </div>
+        `;
+      } else {
+        content.innerHTML = `
+          <div class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-white ring" style="background:${friend.color || '#3b82f6'}">${friend.name.charAt(0).toUpperCase()}</div>
+          <h2 class="font-bold text-xl mb-2 text-white">Incoming call</h2>
+          <p class="text-sm text-zinc-400 mb-6">${escapeHtml(friend.name)} is calling you.</p>
+          <div class="flex gap-3">
+            <button data-answer-call="true" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-green-500 transition">Answer</button>
+            <button data-decline-call="true" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-red-500 transition">Decline</button>
+          </div>
+        `;
+      }
+
+      if (type === 'outgoing') {
+        content.querySelector('[data-end-call]').addEventListener('click', endCurrentCall);
+      } else {
+        content.querySelector('[data-answer-call]').addEventListener('click', () => acceptFn && acceptFn());
+        content.querySelector('[data-decline-call]').addEventListener('click', () => declineFn && declineFn());
+      }
+    }
+
+    function closeCallPanel() {
+      document.getElementById('call-panel').classList.remove('show');
+      document.getElementById('call-panel-content').innerHTML = '';
+    }
+
+    function endCurrentCall() {
+      if (callState.activePeerId) {
+        const pc = peerConnections[callState.activePeerId];
+        if (pc) pc.close();
+        delete peerConnections[callState.activePeerId];
+      }
+      stopLocalStream();
+      callState.activePeerId = null;
+      closeCallPanel();
+      toast('Call ended');
+    }
+
+    function stopLocalStream() {
+      if (callState.localStream) {
+        callState.localStream.getTracks().forEach((track) => track.stop());
+      }
+      callState.localStream = null;
+      callState.remoteStream = null;
+    }
+
+    function startCallTimer() {
+      if (callState.timer) clearInterval(callState.timer);
+      callState.callStart = Date.now();
+      callState.timer = setInterval(() => {
+        if (!callState.activePeerId) {
+          clearInterval(callState.timer);
+          return;
+        }
+      }, 1000);
+    }
+
+    function chatRoomKey(type, id) {
+      return type === 'global' ? 'global' : [state.myUserId, id].sort().join('::');
+    }
+
+    function toast(message) {
+      const toastEl = document.getElementById('toast');
+      toastEl.textContent = message;
+      toastEl.classList.add('show');
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 2200);
+    }
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function generateId(prefix) {
+      return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+    }
+
+    document.addEventListener('click', (event) => {
+      const openDirect = event.target.closest('[data-open-direct]');
+      if (openDirect) openDirectChat(openDirect.dataset.openDirect);
+
+      const addFriend = event.target.closest('[data-add-friend]');
+      if (addFriend) sendFriendRequest(addFriend.dataset.addFriend);
+
+      const acceptRequest = event.target.closest('[data-accept-request]');
+      if (acceptRequest) acceptFriendRequest(acceptRequest.dataset.acceptRequest);
+
+      const declineRequest = event.target.closest('[data-decline-request]');
+      if (declineRequest) declineFriendRequest(declineRequest.dataset.declineRequest);
+    });
+
+    // Demo global message initialization
+    if (!state.globalMessages.length) {
+      state.globalMessages.push({
+        id: generateId('msg'),
+        senderId: 'system',
+        senderName: 'System',
+        senderColor: '#94a3b8',
+        text: 'Welcome to the global room. Add friends and start chatting.',
+        timestamp: Date.now(),
+      });
+      saveState();
+    }
+  </script>
 </body>
 </html>

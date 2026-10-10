@@ -1,0 +1,16 @@
+{
+  "name": "stratus-chatroom",
+  "version": "1.0.0",
+  "description": "Real-time chatroom deployable to Vercel",
+  "main": "api/chat.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node api/server.js",
+    "build": "echo 'Build complete'",
+    "start": "node api/server.js"
+  },
+  "keywords": ["chat", "realtime", "websocket"],
+  "author": "school-rgb",
+  "license": "MIT",
+  "dependencies": {}
+}
